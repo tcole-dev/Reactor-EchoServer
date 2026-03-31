@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 public class Handler {
     // 当前连接的SocketChannel
     private SocketChannel socketChannel;
-    // 对应的SubReactor
+    // 对应的SubReactor，用于获取SocketChannel的SelectionKey，注册事件
     private SubReactor subReactor;
     // 读缓冲区
     private ByteBuffer readBuffer;
@@ -23,13 +23,15 @@ public class Handler {
     public void handleRead() {
         readBuffer.clear();
         try {
+            // 每次读取的字节数
             int readLength;
+            // 若多次读取（一次触发，循环读取），一共读取的字节数
             int totalReadLength = 0;
-            StringBuilder messageBuilder = new StringBuilder();
+            StringBuilder messageBuilder = new StringBuilder();     // 用于拼包
             while ((readLength = socketChannel.read(readBuffer)) > 0) {
-                readBuffer.flip();
+                readBuffer.flip();  // 读模式
                 messageBuilder.append(new String(readBuffer.array(), 0, readLength));
-                readBuffer.clear();
+                readBuffer.clear();  // 写模式，准备下一次读取
                 totalReadLength += readLength;
             }
 
@@ -49,7 +51,7 @@ public class Handler {
             SelectionKey selectionKey = socketChannel.keyFor(subReactor.getSelector());
             if (selectionKey != null) {
                 selectionKey.interestOps(SelectionKey.OP_WRITE);
-                // 唤醒负责监听读写的SubReactor线程，使其立即处理新的事件
+                // 唤醒负责监听读写的SubReactor线程，使其注意到新事件注册
                 subReactor.getSelector().wakeup();
             }
 
@@ -76,7 +78,7 @@ public class Handler {
         try {
             socketChannel.write(writeBuffer);
             if (!writeBuffer.hasRemaining()) {
-                // 数据全部写完后退出写事件，重新注册为读事件
+                // 数据全部写完后退出写事件，重新注册为读事件。若没写完则保持写事件，等待下一次触发。
                 writeBuffer = null;
                 switchToRead();
             }

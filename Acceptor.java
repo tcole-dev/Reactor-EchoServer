@@ -20,9 +20,10 @@ public class Acceptor {
                 // 处理新的客户端连接
                 socketChannel.configureBlocking(false);
                 
-                // 将新的客户端连接注册到SubReactor的Selector上
+                // 从服务端获取一个SubReactor
                 SubReactor subReactor = echoServer.getNextSubReactor();
 
+                // SubReactor提供的方法，存入队列，等待注册
                 subReactor.registerChannel(socketChannel);
 
                 System.out.println("新连接: " + socketChannel.getRemoteAddress() + "被分配到SubReactor: " + subReactor.getIndex());

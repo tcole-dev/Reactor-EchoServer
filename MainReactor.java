@@ -17,14 +17,13 @@ public class MainReactor implements Runnable {
     // ServerSocketChannel，接受客户端连接
     private ServerSocketChannel serverSocketChannel;
 
-    // 服务端引用
+    // 服务端引用，用于Acceptor获取SubReactor
     private EchoServer echoServer;
 
     /**
      * 构造函数
-     * @param serverSocketChannel 服务端SocketChannel
+     * @param serverSocketChannel 服务端SocketChannel，获取客户端连接
      * @param echoServer 服务端引用
-     * @param serverSocketChannel 获取客户端连接
      * @throws IOException 创建Selector失败
      */
     public MainReactor(ServerSocketChannel serverSocketChannel, EchoServer echoServer) throws IOException {
@@ -32,9 +31,10 @@ public class MainReactor implements Runnable {
 
         this.serverSocketChannel = serverSocketChannel;
         this.echoServer = echoServer;
-
+        
+        // MainReactor的selector开始监听OP_ACCEPT
         this.serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-        System.out.println("");
+        System.out.println("MainSubReactor初始化完成");
     }
 
     // 主Reactor的主循环，监听ACCEPT事件，分配给SubReactor
@@ -48,7 +48,8 @@ public class MainReactor implements Runnable {
                 while (iterator.hasNext()) {
                     SelectionKey key = iterator.next();
                     iterator.remove();
-                    // 处理SelectionKey
+
+                    // 交给Acceptor处理SelectionKey（交给Acceptor处理）
                     dispatch(key);
                 }
             } catch (IOException e) {

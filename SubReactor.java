@@ -35,6 +35,8 @@ public class SubReactor implements Runnable {
                 processRegister();
 
                 selector.select();
+                // 在这里被唤醒，此时没有事件处理，会继续循环，在下一个循环处理待注册的Channel
+
                 Set<SelectionKey> selectionKeys = selector.selectedKeys();
                 Iterator<SelectionKey> iterator = selectionKeys.iterator();
                 while (iterator.hasNext()) {
@@ -54,6 +56,7 @@ public class SubReactor implements Runnable {
         SocketChannel socketChannel = null;
         while ((socketChannel = (SocketChannel) pendingChannels.poll()) != null) {
             try {
+                // 每个Channel单独持有一个Handler
                 socketChannel.register(selector, SelectionKey.OP_READ, new Handler(socketChannel, this));
                 System.out.println("连接 " + socketChannel.getRemoteAddress() + "成功注册到 SubReactor-" + index );
             } catch (Exception e) {
@@ -63,7 +66,7 @@ public class SubReactor implements Runnable {
         }
     }
 
-    // 添加Channel到待注册队列，并唤醒Selector
+    // 添加Channel到待注册队列，并唤醒Selector，因为（selector会因为select方法阻塞）
     public void registerChannel(SocketChannel socketChannel) {
         pendingChannels.add(socketChannel);
         selector.wakeup();
