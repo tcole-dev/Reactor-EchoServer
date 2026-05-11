@@ -53,16 +53,18 @@ public class EchoClient {
             System.out.println("连接服务器成功: " + host + ":" + port);
 
             System.out.println("输入文本 (输入 'quit' 退出):");
-            Scanner scanner = new Scanner(System.in);
-
-            while (true) {
-                System.out.print("> ");
-                String input = scanner.nextLine();
-                if ("quit".equals(input)) {
-                    break;
+            try (Scanner scanner = new Scanner(System.in);) {
+                while (true) {
+                    System.out.print("> ");
+                    String input = scanner.nextLine();
+                    if ("quit".equals(input)) {
+                        break;
+                    }
+                    channel.writeAndFlush(input + "\n");
+                    Thread.sleep(500);
                 }
-                channel.writeAndFlush(input + "\n");
-                Thread.sleep(500);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
             channel.close().sync();
